@@ -42,7 +42,7 @@ def run_training():
 
     summary = tf.summary.merge_all()
     init = tf.global_variables_initializer()
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=3)
     sess = tf.Session()
     summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
 
@@ -69,9 +69,10 @@ def run_training():
         
         feed_dict = model.fill_feed_dict(batch_X, batch_y, 0.5)
 
-        _, loss_value, _, model_auc = sess.run([model.train_op, model.loss, model.auc_op, model.auc_value],
+        _, loss_value, _ = sess.run([model.train_op, model.loss, model.auc_op],
                                  feed_dict=feed_dict)
 
+        model_auc = sess.run(model.auc_value, feed_dict=feed_dict)
         print("batch loss=%.6f, auc=%s" % (loss_value, model_auc))
         num_samples += actual_batch_size
         losses.append(loss_value*actual_batch_size)
@@ -84,7 +85,8 @@ def run_training():
       
       label = df.iloc[:,0].values.reshape(-1, 1)
       feed_dict = model.fill_feed_dict(df.iloc[:,1:].values, label, 1)
-      eval_loss, _, eval_auc = sess.run([model.loss, model.auc_op, model.auc_value], feed_dict=feed_dict)
+      eval_loss, _ = sess.run([model.loss, model.auc_op], feed_dict=feed_dict)
+      eval_auc = sess.run(model.auc_value, feed_dict=feed_dict)
       print('epoch %d: train-loss = %.6f, train-auc = %.6f, test-loss = %.6f, test-auc = %.6f  (%.3f sec)' 
             % (epoch, mean_loss, mean_auc, eval_loss, eval_auc, duration))
       # Write the summaries and print an overview fairly often.
